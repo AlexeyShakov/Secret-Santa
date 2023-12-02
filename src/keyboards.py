@@ -16,6 +16,6 @@ menu_choice = InlineKeyboardMarkup(
             InlineKeyboardButton(text="Присоединиться к игре",
                                  callback_data=JoinGameCallBackData(button_name="join_game").pack()),
         ],
-        [InlineKeyboardButton(text="Отмена", callback_data=JoinGameCallBackData(button_name="Cancel").pack())],
+        [InlineKeyboardButton(text="Закрыть", callback_data=JoinGameCallBackData(button_name="Close").pack())],
     ]
 )

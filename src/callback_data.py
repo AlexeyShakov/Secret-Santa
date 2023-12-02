@@ -1,17 +1,17 @@
 from aiogram.filters.callback_data import CallbackData
 
 
-class BaseButtonClass:
+class GameManageCallBackData(CallbackData, prefix="manage_game"):
     button_name: str
 
 
-class GameManageCallBackData(CallbackData, BaseButtonClass):
-    ...
+class CreationCallBackData(CallbackData, prefix="create_game"):
+    button_name: str
 
 
-class CreationCallBackData(CallbackData, BaseButtonClass):
-    ...
+class JoinGameCallBackData(CallbackData, prefix="join_game"):
+    button_name: str
 
 
-class JoinGameCallBackData(CallbackData, BaseButtonClass):
-    ...
+class CloseCallBackData(CallbackData, prefix="close"):
+    button_name: str
