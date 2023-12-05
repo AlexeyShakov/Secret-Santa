@@ -21,7 +21,7 @@ class Game(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(String(length=10), unique=True)
     number_of_player: Mapped[int] = Column(SmallInteger, nullable=False)
-    creator: Mapped["Player"] = relationship()
+    # creator: Mapped["Player"] = mapped_column(ForeignKey("players.id"))
 
     players: Mapped[List["Player"]] = relationship(secondary=association_table, back_populates="games")
 

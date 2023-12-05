@@ -12,6 +12,7 @@ from aiogram.utils.markdown import hbold
 from src.callback_data import RegistrationCallBackData, GameManageCallBackData
 from src.config import TOKEN
 from src.keyboards import menu_choice, manage_game_choice
+from src.utils import register_player
 
 # All handlers should be attached to the Router (or Dispatcher)
 dp = Dispatcher()
@@ -29,7 +30,12 @@ async def display_menu(message: Message) -> None:
 
 @dp.callback_query(RegistrationCallBackData.filter(F.button_name == "registration"))
 async def register(call: CallbackQuery, callback_data: RegistrationCallBackData) -> None:
-    await call.message.answer("Введите", reply_markup=menu_choice)
+    await register_player(
+        chat_id=call.message.chat.id,
+        name="Алеша",
+        last_name="Шаков"
+    )
+    await call.message.answer(text="Вы успешно зарегистрировались!")
 
 
 @dp.callback_query(GameManageCallBackData.filter(F.button_name == "manage_game"))
