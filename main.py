@@ -1,22 +1,21 @@
-
-
 import asyncio
 import logging
 import sys
 from os import getenv
 
-from aiogram import Bot, Dispatcher
+from aiogram import Bot, Dispatcher, F
 from aiogram.enums import ParseMode
 from aiogram.filters import CommandStart, Command
-from aiogram.types import Message
+from aiogram.types import Message, CallbackQuery
 from aiogram.utils.markdown import hbold
 
+from src.callback_data import RegistrationCallBackData, GameManageCallBackData
 from src.config import TOKEN
-from src.keyboards import menu_choice
-
+from src.keyboards import menu_choice, manage_game_choice
 
 # All handlers should be attached to the Router (or Dispatcher)
 dp = Dispatcher()
+
 
 @dp.message(CommandStart())
 async def start(message: Message) -> None:
@@ -26,6 +25,16 @@ async def start(message: Message) -> None:
 @dp.message(Command("menu"))
 async def display_menu(message: Message) -> None:
     await message.answer(text="Выберите действие", reply_markup=menu_choice)
+
+
+@dp.callback_query(RegistrationCallBackData.filter(F.button_name == "registration"))
+async def register(call: CallbackQuery, callback_data: RegistrationCallBackData) -> None:
+    await call.message.answer("Введите", reply_markup=menu_choice)
+
+
+@dp.callback_query(GameManageCallBackData.filter(F.button_name == "manage_game"))
+async def manage_game(call: CallbackQuery, callback_data: GameManageCallBackData) -> None:
+    await call.message.answer("Выбирайте", reply_markup=manage_game_choice)
 
 
 async def main() -> None:

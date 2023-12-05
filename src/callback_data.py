@@ -15,3 +15,15 @@ class JoinGameCallBackData(CallbackData, prefix="join_game"):
 
 class CloseCallBackData(CallbackData, prefix="close"):
     button_name: str
+
+
+class RegistrationCallBackData(CallbackData, prefix="registration"):
+    button_name: str
+
+
+class EditGameCallBackData(CallbackData, prefix="edit_game"):
+    button_name: str
+
+
+class DeleteGameCallBackData(CallbackData, prefix="delete_game"):
+    button_name: str
