@@ -32,11 +32,11 @@ class Game(Base):
 
 
 class Player(Base):
-    ____tablename__ = "players"
+    __tablename__ = "players"
 
-    id = Column(Integer, primary_key=True)
-    chat_id = Column(String(length=40), nullable=False, unique=True)
-    name = Column(String(length=25), nullable=False)
-    last_name = Column(String(length=25), nullable=False)
+    id: Mapped[int] = Column(Integer, primary_key=True)
+    chat_id: Mapped[int] = Column(Integer, nullable=False, unique=True)
+    name: Mapped[str] = Column(String(length=25), nullable=False)
+    last_name: Mapped[str] = Column(String(length=25), nullable=False)
 
     games: Mapped[List[Game]] = relationship(secondary=association_table, back_populates="players")
