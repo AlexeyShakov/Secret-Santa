@@ -25,7 +25,7 @@ class Game(Base):
     creator_id: Mapped[int] = mapped_column(ForeignKey("players.id"))
     creator: Mapped["Player"] = relationship(back_populates="creator_games")
 
-    players: Mapped[List["Player"]] = relationship(secondary=association_table, back_populates="games")
+    players: Mapped[List["Player"]] = relationship(secondary=association_table, back_populates="games", lazy="subquery")
 
     __table_args__ = (
         CheckConstraint(number_of_player > 0, name="check_bar_positive"),

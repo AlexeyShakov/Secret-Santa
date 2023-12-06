@@ -1,0 +1,2 @@
+class PlayerAlreadyAddedToGameException(Exception):
+    pass

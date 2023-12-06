@@ -12,11 +12,16 @@ from aiogram.types import Message, CallbackQuery
 from aiogram.utils.markdown import hbold
 
 from sqlalchemy.exc import IntegrityError
-from src.callback_data import RegistrationCallBackData, GameManageCallBackData, CreationCallBackData
+from sqlalchemy import select
+
+from src.callback_data import RegistrationCallBackData, GameManageCallBackData, CreationCallBackData, \
+    JoinGameCallBackData
 from src.config import TOKEN
+from src.db.models import Game, Player
+from src.exceptions import PlayerAlreadyAddedToGameException
 from src.keyboards import menu_choice, manage_game_choice, data_to_write
-from src.utils import register_player, create_game
-from src.states import RegistrationState, CreationGameState
+from src.utils import register_player, create_game, get_obj, add_player_to_game
+from src.states import RegistrationState, CreationGameState, JoinGameState
 
 # All handlers should be attached to the Router (or Dispatcher)
 dp = Dispatcher()
@@ -32,6 +37,7 @@ async def display_menu(message: Message) -> None:
     await message.answer(text="Выберите действие", reply_markup=menu_choice)
 
 
+#############REGISTRATION##############
 @dp.callback_query(RegistrationCallBackData.filter(F.button_name == "registration"))
 async def register(call: CallbackQuery, callback_data: RegistrationCallBackData, state: FSMContext) -> None:
     await state.set_state(RegistrationState.name)
@@ -63,13 +69,15 @@ async def write_last_name(message: Message, state: FSMContext) -> None:
         await message.answer(text="Вы успешно зарегистрировались!")
 
 
+#############MANAGE_GAME##############
 @dp.callback_query(GameManageCallBackData.filter(F.button_name == "manage_game"))
 async def manage_game(call: CallbackQuery, callback_data: GameManageCallBackData) -> None:
     await call.message.answer("Выбирайте", reply_markup=manage_game_choice)
 
 
+#############CREATE_GAME##############
 @dp.callback_query(CreationCallBackData.filter(F.button_name == "create_game"))
-async def create_game(call: CallbackQuery, callback_data: CreationCallBackData, state: FSMContext) -> None:
+async def create_game_handler(call: CallbackQuery, callback_data: CreationCallBackData, state: FSMContext) -> None:
     await state.set_state(CreationGameState.player_number)
     await call.message.answer("Введите количество участников", reply_markup=data_to_write)
 
@@ -86,6 +94,34 @@ async def write_number_of_player(message: Message, state: FSMContext) -> None:
         name = str(uuid4())[:10]
         await create_game(name=name, creator_chat_id=message.chat.id, number_of_player=number_of_player)
         await message.answer(f"Имя Вашей игры: {hbold(name)}")
+
+
+#############JOIN_GAME##############
+@dp.callback_query(JoinGameCallBackData.filter(F.button_name == "join_game"))
+async def join_game(call: CallbackQuery, callback_data: JoinGameCallBackData, state: FSMContext) -> None:
+    await state.set_state(JoinGameState.game_name)
+    await call.message.answer("Введите название игры", reply_markup=data_to_write)
+
+
+@dp.message(JoinGameState.game_name)
+async def write_number_of_player(message: Message, state: FSMContext) -> None:
+    # TODO проверка, что пользователь не создатель
+    # TODO получение пользователя и игры можно объединить в одну asyncio.Task, чтобы выиграть во времени
+    game_name = message.text
+    game_query = select(Game).filter_by(name=game_name)
+    game = await get_obj(game_query)
+
+    player_query = select(Player).filter_by(chat_id=message.chat.id)
+    # TODO проверка на то, что пользователь зареганный. Сейчас может быть незареганный пользователь
+    player = await get_obj(player_query)
+    if not game:
+        await message.answer("Вы ввели не существующее название игры. Повторите попытку", reply_markup=data_to_write)
+        return
+    await state.clear()
+    try:
+        await add_player_to_game(player=player, game=game)
+    except PlayerAlreadyAddedToGameException as e:
+        await message.answer("Вы уже состоите в данной игре!")
 
 
 async def main() -> None:

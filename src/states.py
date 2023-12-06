@@ -8,3 +8,7 @@ class RegistrationState(StatesGroup):
 
 class CreationGameState(StatesGroup):
     player_number = State()
+
+
+class JoinGameState(StatesGroup):
+    game_name = State()
