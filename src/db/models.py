@@ -21,7 +21,9 @@ class Game(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(String(length=10), unique=True)
     number_of_player: Mapped[int] = Column(SmallInteger, nullable=False)
-    # creator: Mapped["Player"] = mapped_column(ForeignKey("players.id"))
+
+    creator_id: Mapped[int] = mapped_column(ForeignKey("players.id"))
+    creator: Mapped["Player"] = relationship(back_populates="creator_games")
 
     players: Mapped[List["Player"]] = relationship(secondary=association_table, back_populates="games")
 
@@ -38,5 +40,7 @@ class Player(Base):
     chat_id: Mapped[int] = Column(Integer, nullable=False, unique=True)
     name: Mapped[str] = Column(String(length=25), nullable=False)
     last_name: Mapped[str] = Column(String(length=25), nullable=False)
+
+    creator_games: Mapped[List[Game]] = relationship(back_populates="creator")
 
     games: Mapped[List[Game]] = relationship(secondary=association_table, back_populates="players")
