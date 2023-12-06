@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import sys
+from uuid import uuid4
 from os import getenv
 
 from aiogram import Bot, Dispatcher, F
@@ -11,11 +12,11 @@ from aiogram.types import Message, CallbackQuery
 from aiogram.utils.markdown import hbold
 
 from sqlalchemy.exc import IntegrityError
-from src.callback_data import RegistrationCallBackData, GameManageCallBackData
+from src.callback_data import RegistrationCallBackData, GameManageCallBackData, CreationCallBackData
 from src.config import TOKEN
 from src.keyboards import menu_choice, manage_game_choice, data_to_write
-from src.utils import register_player
-from src.states import RegistrationState
+from src.utils import register_player, create_game
+from src.states import RegistrationState, CreationGameState
 
 # All handlers should be attached to the Router (or Dispatcher)
 dp = Dispatcher()
@@ -57,7 +58,7 @@ async def write_last_name(message: Message, state: FSMContext) -> None:
     except IntegrityError as e:
         await message.answer(text="Вы уже зарегистрированы")
     except Exception as e:
-        logging.info(f"Неизвестная ошибка при регистрации пользователя: {e}")
+        logging.exception(f"Неизвестная ошибка при регистрации пользователя: {e}")
     else:
         await message.answer(text="Вы успешно зарегистрировались!")
 
@@ -65,6 +66,26 @@ async def write_last_name(message: Message, state: FSMContext) -> None:
 @dp.callback_query(GameManageCallBackData.filter(F.button_name == "manage_game"))
 async def manage_game(call: CallbackQuery, callback_data: GameManageCallBackData) -> None:
     await call.message.answer("Выбирайте", reply_markup=manage_game_choice)
+
+
+@dp.callback_query(CreationCallBackData.filter(F.button_name == "create_game"))
+async def create_game(call: CallbackQuery, callback_data: CreationCallBackData, state: FSMContext) -> None:
+    await state.set_state(CreationGameState.player_number)
+    await call.message.answer("Введите количество участников", reply_markup=data_to_write)
+
+
+@dp.message(CreationGameState.player_number)
+async def write_number_of_player(message: Message, state: FSMContext) -> None:
+    try:
+        number_of_player = int(message.text)
+    except Exception as e:
+        logging.exception(f"Неверное число: {e}")
+        await message.answer("Введите число", reply_markup=data_to_write)
+    else:
+        await state.clear()
+        name = str(uuid4())[:10]
+        await create_game(name=name, creator_chat_id=message.chat.id, number_of_player=number_of_player)
+        await message.answer(f"Имя Вашей игры: {hbold(name)}")
 
 
 async def main() -> None:
