@@ -48,3 +48,14 @@ manage_game_choice = InlineKeyboardMarkup(
         ]
     ]
 )
+
+data_to_write = ReplyKeyboardMarkup(
+    keyboard=[
+        [
+            KeyboardButton(
+                text="Введите свои данные"
+            )
+        ]
+    ],
+    resize_keyboard=True
+)
