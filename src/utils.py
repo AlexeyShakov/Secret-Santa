@@ -1,7 +1,9 @@
 from copy import deepcopy
 from typing import List, Optional
 
-from src.db.models import Player, Game
+from aiogram import Bot
+
+from src.db.models import Player, Game, GameResult
 from src.db.db_connection import async_session_maker, Base
 
 from sqlalchemy import select
@@ -36,15 +38,15 @@ async def get_obj(query: Select, session) -> Optional[Base]:
     return result.scalars().first()
 
 
-async def add_player_to_game(player: Player, game: Game, session: AsyncSession) -> None:
-    print("ОБЪЕКТ СЕССИИИ", type(session))
-    # TODO Нужна проверка, что пользователь еще не состоит в игре
+async def add_player_to_game(player: Player, game: Game, session: AsyncSession, bot: Bot) -> None:
     game.players.append(player)
     session.add(game)
     await session.commit()
+    if len(game.players) == game.number_of_player - 1:
+        await bot.send_message(chat_id=game.creator.chat_id, text=f"Все игроки присоединились к игре {game.name}")
 
 
-async def find_matches(game: Game) -> dict[Player, Player]:
+async def find_matches(game: Game, session: AsyncSession) -> dict[Player, Player]:
     matches = dict()
     players: List[Player] = game.players
     players.append(game.creator)
@@ -59,6 +61,6 @@ async def find_matches(game: Game) -> dict[Player, Player]:
             matches[player] = gift_getter
             candidates.remove(gift_getter)
             break
-    # TODO на всякий случай нужно добавлять результаты в базу?
-    # TODO is_active = False
+    game_result = GameResult(matches=matches, game=game)
+    session.add(game_result)
     return matches

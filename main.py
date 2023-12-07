@@ -115,27 +115,38 @@ async def write_id_for_joining(message: Message, state: FSMContext) -> None:
         game_query = select(Game).filter_by(name=game_name)
         game = await get_obj(game_query, session)
 
-        current_user_chat_id = message.chat.id
-        if game.creator.chat_id == current_user_chat_id:
+        if not game:
+            await message.answer("Вы ввели не существующее название игры. Повторите попытку",
+                                 reply_markup=data_to_write)
             await state.clear()
-            await message.answer("Вы уже состоите в данной игре как создатель!")
+            return
 
+        current_user_chat_id = message.chat.id
         player_query = select(Player).filter_by(chat_id=current_user_chat_id)
         player = await get_obj(player_query, session)
         if not player:
             await message.answer(
                 "Прежде чем присоединяться к игре, Вы должны зарегистрироваться. Выберите регистрацию в /menu")
-
-        if not game:
-            await message.answer("Вы ввели не существующее название игры. Повторите попытку",
-                                 reply_markup=data_to_write)
             return
-        await state.clear()
+
+        if game.creator.chat_id == current_user_chat_id:
+            await state.clear()
+            await message.answer("Вы уже состоите в данной игре как создатель!")
+            return
+
+        game_players_ids = [player.chat_id for player in game.players]
+        if player.chat_id in game_players_ids:
+            await message.answer("Вы уже присоединились к игре!")
+            await state.clear()
+            return
+
         try:
-            await add_player_to_game(player=player, game=game, session=session)
+            await add_player_to_game(player=player, game=game, session=session, bot=bot)
             await message.answer("Вы успешно присоединились к игре.")
         except PlayerAlreadyAddedToGameException as e:
             await message.answer("Вы уже состоите в данной игре!")
+        finally:
+            await state.clear()
 
 
 #############START_GAME##############
@@ -154,18 +165,21 @@ async def write_game_name_for_starting(message: Message, state: FSMContext) -> N
 
         if not game.is_active:
             await message.answer("Данная игра уже завершилась!")
+            return
         if game.creator.chat_id != message.chat.id:
             await message.answer("Только создатель может начать игру!")
+            return
         if game.number_of_player != len(game.players):
             await message.answer("Не все игроки еще присоединились к игре!")
-
-        matches = await find_matches(game)
+            return
+        matches = await find_matches(game, session)
         await state.clear()
         # TODO Засунуть в asyncio.Tasks?
         for santa, gift_taker in matches.items():
             message = f"Вы должны сделать подарок пользователю {hbold(gift_taker.name)} {hbold(gift_taker.last_name)}"
             await bot.send_message(chat_id=santa.chat_id, text=message)
         game.is_active = False
+        session.add(game)
         await session.commit()
 
 
