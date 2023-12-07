@@ -2,7 +2,6 @@ import asyncio
 import logging
 import sys
 from uuid import uuid4
-from os import getenv
 
 from aiogram import Bot, Dispatcher, F
 from aiogram.enums import ParseMode
@@ -95,6 +94,7 @@ async def write_number_of_player(message: Message, state: FSMContext) -> None:
         if number_of_player < 2:
             await message.answer("Количество игроков должно быть больше 2! Введите количество игроков еще раз",
                                  reply_markup=data_to_write)
+            return
         await state.clear()
         name = str(uuid4())[:10]
         await create_game(name=name, creator_chat_id=message.chat.id, number_of_player=number_of_player)
@@ -162,7 +162,9 @@ async def write_game_name_for_starting(message: Message, state: FSMContext) -> N
     async with async_session_maker() as session:
         game_query = select(Game).filter_by(name=game_name)
         game: Game = await get_obj(game_query, session)
-
+        if not game:
+            await message.answer("Игра с таким идентификатором не существует!")
+            return
         if not game.is_active:
             await message.answer("Данная игра уже завершилась!")
             return
