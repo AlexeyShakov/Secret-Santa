@@ -12,3 +12,7 @@ class CreationGameState(StatesGroup):
 
 class JoinGameState(StatesGroup):
     game_name = State()
+
+
+class StartGameState(StatesGroup):
+    game_name = State()

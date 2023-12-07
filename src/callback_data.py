@@ -27,3 +27,7 @@ class EditGameCallBackData(CallbackData, prefix="edit_game"):
 
 class DeleteGameCallBackData(CallbackData, prefix="delete_game"):
     button_name: str
+
+
+class StartGameCallBack(CallbackData, prefix="start_game"):
+    button_name: str

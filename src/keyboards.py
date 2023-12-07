@@ -1,7 +1,7 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton
 
 from src.callback_data import GameManageCallBackData, CreationCallBackData, JoinGameCallBackData, \
-    RegistrationCallBackData, EditGameCallBackData, DeleteGameCallBackData
+    RegistrationCallBackData, EditGameCallBackData, DeleteGameCallBackData, StartGameCallBack
 
 menu_choice = InlineKeyboardMarkup(
     inline_keyboard=[
@@ -38,6 +38,12 @@ manage_game_choice = InlineKeyboardMarkup(
             InlineKeyboardButton(
                 text="Присоединиться к игре",
                 callback_data=JoinGameCallBackData(button_name="join_game").pack()
+            )
+        ],
+        [
+            InlineKeyboardButton(
+                text="Запустить игру",
+                callback_data=StartGameCallBack(button_name="start_game").pack()
             )
         ],
         [

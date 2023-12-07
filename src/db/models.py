@@ -21,9 +21,10 @@ class Game(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(String(length=10), unique=True)
     number_of_player: Mapped[int] = Column(SmallInteger, nullable=False)
+    # TODO is_active: bool
 
     creator_id: Mapped[int] = mapped_column(ForeignKey("players.id"))
-    creator: Mapped["Player"] = relationship(back_populates="creator_games")
+    creator: Mapped["Player"] = relationship(back_populates="creator_games", lazy="subquery")
 
     players: Mapped[List["Player"]] = relationship(secondary=association_table, back_populates="games", lazy="subquery")
 

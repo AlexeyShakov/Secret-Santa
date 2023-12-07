@@ -15,17 +15,18 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy import select
 
 from src.callback_data import RegistrationCallBackData, GameManageCallBackData, CreationCallBackData, \
-    JoinGameCallBackData
+    JoinGameCallBackData, StartGameCallBack
 from src.config import TOKEN
 from src.db.db_connection import async_session_maker
 from src.db.models import Game, Player
 from src.exceptions import PlayerAlreadyAddedToGameException
 from src.keyboards import menu_choice, manage_game_choice, data_to_write
-from src.utils import register_player, create_game, get_obj, add_player_to_game
-from src.states import RegistrationState, CreationGameState, JoinGameState
+from src.utils import register_player, create_game, get_obj, add_player_to_game, find_matches
+from src.states import RegistrationState, CreationGameState, JoinGameState, StartGameState
 
 # All handlers should be attached to the Router (or Dispatcher)
 dp = Dispatcher()
+bot = Bot(TOKEN, parse_mode=ParseMode.HTML)
 
 
 @dp.message(CommandStart())
@@ -67,7 +68,7 @@ async def write_last_name(message: Message, state: FSMContext) -> None:
     except Exception as e:
         logging.exception(f"Неизвестная ошибка при регистрации пользователя: {e}")
     else:
-        await message.answer(text="Вы успешно зарегистрировались!")
+        await message.answer(text="Вы успешно зарегистрировались! Введите /manage_game для дальнейших действий")
 
 
 #############MANAGE_GAME##############
@@ -117,21 +118,41 @@ async def write_number_of_player(message: Message, state: FSMContext) -> None:
         # TODO проверка на то, что пользователь зареганный. Сейчас может быть незареганный пользователь
         player = await get_obj(player_query, session)
         if not game:
-            await message.answer("Вы ввели не существующее название игры. Повторите попытку", reply_markup=data_to_write)
+            await message.answer("Вы ввели не существующее название игры. Повторите попытку",
+                                 reply_markup=data_to_write)
             return
         await state.clear()
         try:
             await add_player_to_game(player=player, game=game, session=session)
-            await message.answer("Вы успешно присоединились к игре")
+            await message.answer("Вы успешно присоединились к игре.")
         except PlayerAlreadyAddedToGameException as e:
             await message.answer("Вы уже состоите в данной игре!")
 
 
+#############START_GAME##############
+@dp.callback_query(StartGameCallBack.filter(F.button_name == "start_game"))
+async def start_game_handler(call: CallbackQuery, callback_data: StartGameCallBack, state: FSMContext):
+    await state.set_state(StartGameState.game_name)
+    await call.message.answer("Введите индетификатор игры", reply_markup=data_to_write)
 
+
+@dp.message(StartGameState.game_name)
+async def write_game_name_for_starting(message: Message, state: FSMContext) -> None:
+    # TODO Проверить, что человек, который прислал запрос, создатель игры
+    # TODO проверить, сколько человек присоединено к игре
+    game_name = message.text
+    async with async_session_maker() as session:
+        game_query = select(Game).filter_by(name=game_name)
+        game = await get_obj(game_query, session)
+        matches = await find_matches(game)
+    # TODO Засунуть в asyncio.Tasks?
+    for santa, gift_taker in matches.items():
+        message = f"Вы должны сделать подарок пользователю {gift_taker.name} {gift_taker.last_name}"
+        await bot.send_message(chat_id=santa.chat_id, text=message)
 
 
 async def main() -> None:
-    bot = Bot(TOKEN, parse_mode=ParseMode.HTML)
+    # bot = Bot(TOKEN, parse_mode=ParseMode.HTML)
     await dp.start_polling(bot)
 
 
