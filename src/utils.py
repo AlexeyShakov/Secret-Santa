@@ -1,5 +1,5 @@
 from copy import deepcopy
-from typing import List
+from typing import List, Optional
 
 from src.db.models import Player, Game
 from src.db.db_connection import async_session_maker, Base
@@ -31,7 +31,7 @@ async def create_game(number_of_player: int, creator_chat_id: int, name: str) ->
         await session.commit()
 
 
-async def get_obj(query: Select, session) -> Base:
+async def get_obj(query: Select, session) -> Optional[Base]:
     result = await session.execute(query)
     return result.scalars().first()
 

@@ -31,7 +31,7 @@ bot = Bot(TOKEN, parse_mode=ParseMode.HTML)
 
 @dp.message(CommandStart())
 async def start(message: Message) -> None:
-    await message.answer(f"Приветствую, {hbold(message.from_user.full_name)}!. Введите /menu для выбора действия")
+    await message.answer(f"Приветствую, {hbold(message.from_user.full_name)}!")
 
 
 @dp.message(Command("menu"))
@@ -64,7 +64,7 @@ async def write_last_name(message: Message, state: FSMContext) -> None:
             chat_id=message.chat.id
         )
     except IntegrityError as e:
-        await message.answer(text="Вы уже зарегистрированы")
+        await message.answer(text="Вы уже зарегистрированы. Для дальнейших действий перейдите в /menu")
     except Exception as e:
         logging.exception(f"Неизвестная ошибка при регистрации пользователя: {e}")
     else:
@@ -92,6 +92,9 @@ async def write_number_of_player(message: Message, state: FSMContext) -> None:
         logging.exception(f"Неверное число: {e}")
         await message.answer("Введите число", reply_markup=data_to_write)
     else:
+        if number_of_player < 2:
+            await message.answer("Количество игроков должно быть больше 2! Введите количество игроков еще раз",
+                                 reply_markup=data_to_write)
         await state.clear()
         name = str(uuid4())[:10]
         await create_game(name=name, creator_chat_id=message.chat.id, number_of_player=number_of_player)
@@ -106,17 +109,23 @@ async def join_game(call: CallbackQuery, callback_data: JoinGameCallBackData, st
 
 
 @dp.message(JoinGameState.game_name)
-async def write_number_of_player(message: Message, state: FSMContext) -> None:
+async def write_id_for_joining(message: Message, state: FSMContext) -> None:
     async with async_session_maker() as session:
-        # TODO проверка, что пользователь не создатель
-        # TODO получение пользователя и игры можно объединить в одну asyncio.Task, чтобы выиграть во времени
         game_name = message.text
         game_query = select(Game).filter_by(name=game_name)
         game = await get_obj(game_query, session)
 
-        player_query = select(Player).filter_by(chat_id=message.chat.id)
-        # TODO проверка на то, что пользователь зареганный. Сейчас может быть незареганный пользователь
+        current_user_chat_id = message.chat.id
+        if game.creator.chat_id == current_user_chat_id:
+            await state.clear()
+            await message.answer("Вы уже состоите в данной игре как создатель!")
+
+        player_query = select(Player).filter_by(chat_id=current_user_chat_id)
         player = await get_obj(player_query, session)
+        if not player:
+            await message.answer(
+                "Прежде чем присоединяться к игре, Вы должны зарегистрироваться. Выберите регистрацию в /menu")
+
         if not game:
             await message.answer("Вы ввели не существующее название игры. Повторите попытку",
                                  reply_markup=data_to_write)
@@ -138,17 +147,26 @@ async def start_game_handler(call: CallbackQuery, callback_data: StartGameCallBa
 
 @dp.message(StartGameState.game_name)
 async def write_game_name_for_starting(message: Message, state: FSMContext) -> None:
-    # TODO Проверить, что человек, который прислал запрос, создатель игры
-    # TODO проверить, сколько человек присоединено к игре
     game_name = message.text
     async with async_session_maker() as session:
         game_query = select(Game).filter_by(name=game_name)
-        game = await get_obj(game_query, session)
+        game: Game = await get_obj(game_query, session)
+
+        if not game.is_active:
+            await message.answer("Данная игра уже завершилась!")
+        if game.creator.chat_id != message.chat.id:
+            await message.answer("Только создатель может начать игру!")
+        if game.number_of_player != len(game.players):
+            await message.answer("Не все игроки еще присоединились к игре!")
+
         matches = await find_matches(game)
-    # TODO Засунуть в asyncio.Tasks?
-    for santa, gift_taker in matches.items():
-        message = f"Вы должны сделать подарок пользователю {gift_taker.name} {gift_taker.last_name}"
-        await bot.send_message(chat_id=santa.chat_id, text=message)
+        await state.clear()
+        # TODO Засунуть в asyncio.Tasks?
+        for santa, gift_taker in matches.items():
+            message = f"Вы должны сделать подарок пользователю {hbold(gift_taker.name)} {hbold(gift_taker.last_name)}"
+            await bot.send_message(chat_id=santa.chat_id, text=message)
+        game.is_active = False
+        await session.commit()
 
 
 async def main() -> None:

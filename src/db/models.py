@@ -1,7 +1,7 @@
 from typing import List
 
 from sqlalchemy.orm import relationship
-from sqlalchemy import Integer, Column, String, SmallInteger, CheckConstraint, Table, ForeignKey
+from sqlalchemy import Integer, Column, String, SmallInteger, CheckConstraint, Table, ForeignKey, Boolean
 from sqlalchemy.orm import Mapped, mapped_column
 
 from .db_connection import Base
@@ -20,8 +20,8 @@ class Game(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(String(length=10), unique=True)
-    number_of_player: Mapped[int] = Column(SmallInteger, nullable=False)
-    # TODO is_active: bool
+    number_of_player: Mapped[int] = mapped_column(SmallInteger, nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
     creator_id: Mapped[int] = mapped_column(ForeignKey("players.id"))
     creator: Mapped["Player"] = relationship(back_populates="creator_games", lazy="subquery")
@@ -37,10 +37,10 @@ class Game(Base):
 class Player(Base):
     __tablename__ = "players"
 
-    id: Mapped[int] = Column(Integer, primary_key=True)
-    chat_id: Mapped[int] = Column(Integer, nullable=False, unique=True)
-    name: Mapped[str] = Column(String(length=25), nullable=False)
-    last_name: Mapped[str] = Column(String(length=25), nullable=False)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    chat_id: Mapped[int] = mapped_column(Integer, nullable=False, unique=True)
+    name: Mapped[str] = mapped_column(String(length=25), nullable=False)
+    last_name: Mapped[str] = mapped_column(String(length=25), nullable=False)
 
     creator_games: Mapped[List[Game]] = relationship(back_populates="creator")
 
