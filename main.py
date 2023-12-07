@@ -17,6 +17,7 @@ from sqlalchemy import select
 from src.callback_data import RegistrationCallBackData, GameManageCallBackData, CreationCallBackData, \
     JoinGameCallBackData
 from src.config import TOKEN
+from src.db.db_connection import async_session_maker
 from src.db.models import Game, Player
 from src.exceptions import PlayerAlreadyAddedToGameException
 from src.keyboards import menu_choice, manage_game_choice, data_to_write
@@ -93,35 +94,40 @@ async def write_number_of_player(message: Message, state: FSMContext) -> None:
         await state.clear()
         name = str(uuid4())[:10]
         await create_game(name=name, creator_chat_id=message.chat.id, number_of_player=number_of_player)
-        await message.answer(f"Имя Вашей игры: {hbold(name)}")
+        await message.answer(f"Индефикатор Вашей игры: {hbold(name)}")
 
 
 #############JOIN_GAME##############
 @dp.callback_query(JoinGameCallBackData.filter(F.button_name == "join_game"))
 async def join_game(call: CallbackQuery, callback_data: JoinGameCallBackData, state: FSMContext) -> None:
     await state.set_state(JoinGameState.game_name)
-    await call.message.answer("Введите название игры", reply_markup=data_to_write)
+    await call.message.answer("Введите индетификатор игры", reply_markup=data_to_write)
 
 
 @dp.message(JoinGameState.game_name)
 async def write_number_of_player(message: Message, state: FSMContext) -> None:
-    # TODO проверка, что пользователь не создатель
-    # TODO получение пользователя и игры можно объединить в одну asyncio.Task, чтобы выиграть во времени
-    game_name = message.text
-    game_query = select(Game).filter_by(name=game_name)
-    game = await get_obj(game_query)
+    async with async_session_maker() as session:
+        # TODO проверка, что пользователь не создатель
+        # TODO получение пользователя и игры можно объединить в одну asyncio.Task, чтобы выиграть во времени
+        game_name = message.text
+        game_query = select(Game).filter_by(name=game_name)
+        game = await get_obj(game_query, session)
 
-    player_query = select(Player).filter_by(chat_id=message.chat.id)
-    # TODO проверка на то, что пользователь зареганный. Сейчас может быть незареганный пользователь
-    player = await get_obj(player_query)
-    if not game:
-        await message.answer("Вы ввели не существующее название игры. Повторите попытку", reply_markup=data_to_write)
-        return
-    await state.clear()
-    try:
-        await add_player_to_game(player=player, game=game)
-    except PlayerAlreadyAddedToGameException as e:
-        await message.answer("Вы уже состоите в данной игре!")
+        player_query = select(Player).filter_by(chat_id=message.chat.id)
+        # TODO проверка на то, что пользователь зареганный. Сейчас может быть незареганный пользователь
+        player = await get_obj(player_query, session)
+        if not game:
+            await message.answer("Вы ввели не существующее название игры. Повторите попытку", reply_markup=data_to_write)
+            return
+        await state.clear()
+        try:
+            await add_player_to_game(player=player, game=game, session=session)
+            await message.answer("Вы успешно присоединились к игре")
+        except PlayerAlreadyAddedToGameException as e:
+            await message.answer("Вы уже состоите в данной игре!")
+
+
+
 
 
 async def main() -> None:
