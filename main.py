@@ -7,7 +7,7 @@ from aiogram import Bot, Dispatcher, F
 from aiogram.enums import ParseMode
 from aiogram.filters import CommandStart, Command
 from aiogram.fsm.context import FSMContext
-from aiogram.types import Message, CallbackQuery
+from aiogram.types import Message, CallbackQuery, BotCommand
 from aiogram.utils.markdown import hbold
 
 from sqlalchemy.exc import IntegrityError
@@ -15,7 +15,7 @@ from sqlalchemy import select
 
 from src.callback_data import RegistrationCallBackData, GameManageCallBackData, CreationCallBackData, \
     JoinGameCallBackData, StartGameCallBack
-from src.config import TOKEN
+from src.config import TOKEN, MIN_PLAYERS
 from src.db.db_connection import async_session_maker
 from src.db.models import Game, Player
 from src.exceptions import PlayerAlreadyAddedToGameException
@@ -33,16 +33,35 @@ async def start(message: Message) -> None:
     await message.answer(f"Приветствую, {hbold(message.from_user.full_name)}!")
 
 
-@dp.message(Command("menu"))
-async def display_menu(message: Message) -> None:
-    await message.answer(text="Выберите действие", reply_markup=menu_choice)
+@dp.message(Command("help"))
+async def help(message: Message) -> None:
+    info = "Данный бот предназначен для игры в тайногу Санту.\n\n" \
+           "Для того, чтобы пользоваться ботом нужно зарегистрироваться здесь /register.\n\n" \
+           "Далее Вы можете создать свою собственную игру и пригласить туда друзей, либо присоединиться к существующей " \
+           "игре.\n\n" \
+           "Вы можете создать свою собственную игру здесь /create_game. Для этого " \
+           "нужно ввести количество людей, кто будет играть, включая Вас. После того, как Вы введете число, Вы получите " \
+           "уникальный идентификатор игры, который Вы должны передать всем участникам. Ваши друзья должны присоединиться " \
+           "к игре здесь /join_game. После того, как все Ваши друзья присоединяться, Вам как создателю игры придет " \
+           "сообщение. Далее введите команду /start_game и ждите результатов игры!\n\nЕсли Вы хотите присоединиться к " \
+           "уже созданной кем-то игре, то просто введите /join_game и следуйте инструкции\n\n" \
+           "Счастливого нового года!"
+    # TODO добавить информацию об изменении игры
+    # TODO добавить информацию об удалении игры
+    await message.answer(info)
+
+
+# @dp.message(Command("menu"))
+# async def display_menu(message: Message) -> None:
+#     await message.answer(text="Выберите действие", reply_markup=menu_choice)
 
 
 #############REGISTRATION##############
-@dp.callback_query(RegistrationCallBackData.filter(F.button_name == "registration"))
-async def register(call: CallbackQuery, callback_data: RegistrationCallBackData, state: FSMContext) -> None:
+# @dp.callback_query(RegistrationCallBackData.filter(F.button_name == "registration"))
+@dp.message(Command("register"))
+async def register(message: Message, state: FSMContext) -> None:
     await state.set_state(RegistrationState.name)
-    await call.message.answer(text="Введите свое имя", reply_markup=data_to_write)
+    await message.answer(text="Введите свое имя", reply_markup=data_to_write)
 
 
 @dp.message(RegistrationState.name)
@@ -63,7 +82,7 @@ async def write_last_name(message: Message, state: FSMContext) -> None:
             chat_id=message.chat.id
         )
     except IntegrityError as e:
-        await message.answer(text="Вы уже зарегистрированы. Для дальнейших действий перейдите в /menu")
+        await message.answer(text="Вы уже зарегистрированы. Для дальнейших действий перейдите в меню")
     except Exception as e:
         logging.exception(f"Неизвестная ошибка при регистрации пользователя: {e}")
     else:
@@ -71,16 +90,16 @@ async def write_last_name(message: Message, state: FSMContext) -> None:
 
 
 #############MANAGE_GAME##############
-@dp.callback_query(GameManageCallBackData.filter(F.button_name == "manage_game"))
-async def manage_game(call: CallbackQuery, callback_data: GameManageCallBackData) -> None:
-    await call.message.answer("Выбирайте", reply_markup=manage_game_choice)
+# @dp.callback_query(GameManageCallBackData.filter(F.button_name == "manage_game"))
+# async def manage_game(call: CallbackQuery, callback_data: GameManageCallBackData) -> None:
+#     await call.message.answer("Выбирайте", reply_markup=manage_game_choice)
 
 
 #############CREATE_GAME##############
-@dp.callback_query(CreationCallBackData.filter(F.button_name == "create_game"))
-async def create_game_handler(call: CallbackQuery, callback_data: CreationCallBackData, state: FSMContext) -> None:
+@dp.message(Command("create_game"))
+async def create_game_handler(message: Message, state: FSMContext) -> None:
     await state.set_state(CreationGameState.player_number)
-    await call.message.answer("Введите количество участников", reply_markup=data_to_write)
+    await message.answer("Введите количество участников", reply_markup=data_to_write)
 
 
 @dp.message(CreationGameState.player_number)
@@ -91,8 +110,8 @@ async def write_number_of_player(message: Message, state: FSMContext) -> None:
         logging.exception(f"Неверное число: {e}")
         await message.answer("Введите число", reply_markup=data_to_write)
     else:
-        if number_of_player < 2:
-            await message.answer("Количество игроков должно быть больше 2! Введите количество игроков еще раз",
+        if number_of_player < MIN_PLAYERS:
+            await message.answer(f"Количество игроков должно быть больше {MIN_PLAYERS}! Введите количество игроков еще раз",
                                  reply_markup=data_to_write)
             return
         await state.clear()
@@ -102,10 +121,10 @@ async def write_number_of_player(message: Message, state: FSMContext) -> None:
 
 
 #############JOIN_GAME##############
-@dp.callback_query(JoinGameCallBackData.filter(F.button_name == "join_game"))
-async def join_game(call: CallbackQuery, callback_data: JoinGameCallBackData, state: FSMContext) -> None:
+@dp.message(Command("join_game"))
+async def join_game(message: Message, state: FSMContext) -> None:
     await state.set_state(JoinGameState.game_name)
-    await call.message.answer("Введите индетификатор игры", reply_markup=data_to_write)
+    await message.answer("Введите индетификатор игры", reply_markup=data_to_write)
 
 
 @dp.message(JoinGameState.game_name)
@@ -150,10 +169,10 @@ async def write_id_for_joining(message: Message, state: FSMContext) -> None:
 
 
 #############START_GAME##############
-@dp.callback_query(StartGameCallBack.filter(F.button_name == "start_game"))
-async def start_game_handler(call: CallbackQuery, callback_data: StartGameCallBack, state: FSMContext):
+@dp.message(Command("start_game"))
+async def start_game_handler(message: Message, state: FSMContext):
     await state.set_state(StartGameState.game_name)
-    await call.message.answer("Введите индетификатор игры", reply_markup=data_to_write)
+    await message.answer("Введите индетификатор игры", reply_markup=data_to_write)
 
 
 @dp.message(StartGameState.game_name)
@@ -171,7 +190,8 @@ async def write_game_name_for_starting(message: Message, state: FSMContext) -> N
         if game.creator.chat_id != message.chat.id:
             await message.answer("Только создатель может начать игру!")
             return
-        if game.number_of_player != len(game.players):
+        # +1 потому что еще есть создатель игры!
+        if game.number_of_player != len(game.players) + 1:
             await message.answer("Не все игроки еще присоединились к игре!")
             return
         matches = await find_matches(game, session)
@@ -185,8 +205,22 @@ async def write_game_name_for_starting(message: Message, state: FSMContext) -> N
         await session.commit()
 
 
+async def setup_bot_commands():
+    bot_commands = [
+        BotCommand(command="/help", description="Узнать информацию о боте"),
+        BotCommand(command="/register", description="Зарегистрироваться"),
+        BotCommand(command="/create_game", description="Создать игру"),
+        BotCommand(command="/start_game", description="Запустить игру"),
+        BotCommand(command="/join_game", description="Присоединиться к игре"),
+        # TODO удалить игру
+        # TODO изменить игру - изменить количество участников или активировать игру заново
+    ]
+    await bot.set_my_commands(bot_commands)
+
+
 async def main() -> None:
     # bot = Bot(TOKEN, parse_mode=ParseMode.HTML)
+    await setup_bot_commands()
     await dp.start_polling(bot)
 
 

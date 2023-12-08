@@ -55,12 +55,16 @@ async def find_matches(game: Game, session: AsyncSession) -> dict[Player, Player
 
     for player in players:
         while True:
-            gift_getter = random.choice(candidates)
+            print("Я в бесконечно цикле")
+            gift_getter: Player = random.choice(candidates)
             if gift_getter.chat_id == player.chat_id:
+                print("CONT")
                 continue
             matches[player] = gift_getter
             candidates.remove(gift_getter)
             break
+    print("Вышел")
+    # formatted_matches = {f"{player.name} {player.last_name}": f"{gift_getter.name} {gift_getter.last_name}" for player, gift_getter in matches.items()}
     game_result = GameResult(matches=matches, game=game)
     session.add(game_result)
     return matches
