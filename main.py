@@ -3,23 +3,21 @@ import logging
 import sys
 from uuid import uuid4
 
-from aiogram import Bot, Dispatcher, F
+from aiogram import Bot, Dispatcher
 from aiogram.enums import ParseMode
 from aiogram.filters import CommandStart, Command
 from aiogram.fsm.context import FSMContext
-from aiogram.types import Message, CallbackQuery, BotCommand
+from aiogram.types import Message, BotCommand
 from aiogram.utils.markdown import hbold
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import select
 
-from src.callback_data import RegistrationCallBackData, GameManageCallBackData, CreationCallBackData, \
-    JoinGameCallBackData, StartGameCallBack
 from src.config import TOKEN, MIN_PLAYERS
 from src.db.db_connection import async_session_maker
 from src.db.models import Game, Player
 from src.exceptions import PlayerAlreadyAddedToGameException
-from src.keyboards import menu_choice, manage_game_choice, data_to_write
+from src.keyboards import data_to_write
 from src.utils import register_player, create_game, get_obj, add_player_to_game, find_matches
 from src.states import RegistrationState, CreationGameState, JoinGameState, StartGameState
 
@@ -51,13 +49,7 @@ async def help(message: Message) -> None:
     await message.answer(info)
 
 
-# @dp.message(Command("menu"))
-# async def display_menu(message: Message) -> None:
-#     await message.answer(text="Выберите действие", reply_markup=menu_choice)
-
-
 #############REGISTRATION##############
-# @dp.callback_query(RegistrationCallBackData.filter(F.button_name == "registration"))
 @dp.message(Command("register"))
 async def register(message: Message, state: FSMContext) -> None:
     await state.set_state(RegistrationState.name)
@@ -87,12 +79,6 @@ async def write_last_name(message: Message, state: FSMContext) -> None:
         logging.exception(f"Неизвестная ошибка при регистрации пользователя: {e}")
     else:
         await message.answer(text="Вы успешно зарегистрировались! Введите /manage_game для дальнейших действий")
-
-
-#############MANAGE_GAME##############
-# @dp.callback_query(GameManageCallBackData.filter(F.button_name == "manage_game"))
-# async def manage_game(call: CallbackQuery, callback_data: GameManageCallBackData) -> None:
-#     await call.message.answer("Выбирайте", reply_markup=manage_game_choice)
 
 
 #############CREATE_GAME##############
