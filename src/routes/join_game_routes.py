@@ -1,7 +1,10 @@
+import logging
+
 from aiogram import Router
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
+from aiogram.utils.markdown import hbold
 from sqlalchemy import select
 
 from main import BOT
@@ -27,12 +30,16 @@ async def write_id_for_joining(message: Message, state: FSMContext) -> None:
         game_query = select(Game).filter_by(name=game_name)
         game = await get_obj(game_query, session)
 
+
         if not game:
             await message.answer("Вы ввели не существующее название игры. Повторите попытку",
                                  reply_markup=data_to_write)
             await state.clear()
             return
-
+        if len(game.players) + 1 == game.number_of_player:
+            await message.answer("К данной игре присоединилось достаточное количество игроков!")
+            await state.clear()
+            return
         current_user_chat_id = message.chat.id
         player_query = select(Player).filter_by(chat_id=current_user_chat_id)
         player = await get_obj(player_query, session)
@@ -40,6 +47,7 @@ async def write_id_for_joining(message: Message, state: FSMContext) -> None:
             await message.answer(
                 "Прежде чем присоединяться к игре, Вы должны зарегистрироваться. Выберите регистрацию в /menu")
             return
+        logging.info(f"Игрок {player.name} {player.last_name} пытается присоединиться к игре {hbold(game.name)}")
 
         if game.creator.chat_id == current_user_chat_id:
             await state.clear()
@@ -54,7 +62,11 @@ async def write_id_for_joining(message: Message, state: FSMContext) -> None:
 
         try:
             await add_player_to_game(player=player, game=game, session=session, bot=BOT)
+            # TODO здесь можно засунуть эти две задачи asyncio.Task
             await message.answer("Вы успешно присоединились к игре.")
+            await BOT.send_message(chat_id=game.creator.chat_id, text=f"{player.name} {player.last_name} "
+                                                                      f"присоединился(ась) к игре {hbold(game.name)}")
+            logging.info(f"Игрок {player.name} {player.last_name} успешно присоединился к игре {hbold(game.name)}")
         except PlayerAlreadyAddedToGameException as e:
             await message.answer("Вы уже состоите в данной игре!")
         finally:

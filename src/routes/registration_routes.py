@@ -42,4 +42,4 @@ async def write_last_name(message: Message, state: FSMContext) -> None:
     except Exception as e:
         logging.exception(f"Неизвестная ошибка при регистрации пользователя: {e}")
     else:
-        await message.answer(text="Вы успешно зарегистрировались! Введите /manage_game для дальнейших действий")
+        await message.answer(text="Вы успешно зарегистрировались! Для дальнейших действий нажмите на кнопку меню")
