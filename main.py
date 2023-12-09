@@ -200,8 +200,6 @@ async def write_game_name_for_starting(message: Message, state: FSMContext) -> N
         for santa, gift_taker in matches.items():
             message = f"Вы должны сделать подарок пользователю {hbold(gift_taker.name)} {hbold(gift_taker.last_name)}"
             await bot.send_message(chat_id=santa.chat_id, text=message)
-        game.is_active = False
-        session.add(game)
         await session.commit()
 
 

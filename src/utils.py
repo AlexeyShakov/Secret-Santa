@@ -48,23 +48,31 @@ async def add_player_to_game(player: Player, game: Game, session: AsyncSession, 
 
 async def find_matches(game: Game, session: AsyncSession) -> dict[Player, Player]:
     matches = dict()
-    players: List[Player] = game.players
+    # Нужен для дополнительной проверки.Допустим играет 3 человека юзер1, юзер2 и юзер3(создатель). Если юзер1
+    # будет сантой для юзер 2, а юзер 2 будет сантой для юзер 1, То получится так, что останется один юзер3. И я окажусь
+    # в бесконечном цикле. Поэтому я завожу словарь, где ключом будет игрок, кто получает подарок, а значением тайный санта
+    getter_santa_mapping = dict()
+
+    players: List[Player] = deepcopy(game.players)
     players.append(game.creator)
 
     candidates: List[Player] = deepcopy(players)
 
     for player in players:
         while True:
-            print("Я в бесконечно цикле")
             gift_getter: Player = random.choice(candidates)
             if gift_getter.chat_id == player.chat_id:
-                print("CONT")
+                continue
+            if player.chat_id in getter_santa_mapping and getter_santa_mapping[player.chat_id] == gift_getter.chat_id:
                 continue
             matches[player] = gift_getter
+            getter_santa_mapping[gift_getter.chat_id] = player.chat_id
             candidates.remove(gift_getter)
             break
-    print("Вышел")
-    # formatted_matches = {f"{player.name} {player.last_name}": f"{gift_getter.name} {gift_getter.last_name}" for player, gift_getter in matches.items()}
-    game_result = GameResult(matches=matches, game=game)
-    session.add(game_result)
+
+    formatted_matches = {f"{player.name} {player.last_name}": f"{gift_getter.name} {gift_getter.last_name}" for player, gift_getter in matches.items()}
+    game_result = GameResult(matches=formatted_matches, game=game)
+    game.is_active = False
+
+    session.add_all([game_result, game])
     return matches
