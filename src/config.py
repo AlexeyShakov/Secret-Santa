@@ -8,8 +8,6 @@ load_dotenv()
 
 TOKEN = os.getenv("TG_BOT_TOKEN")
 
-BOT = Bot(TOKEN, parse_mode=ParseMode.HTML)
-DP = Dispatcher()
 
 DB_HOST = os.getenv("DB_HOST")
 DB_NAME = os.getenv("DB_NAME")

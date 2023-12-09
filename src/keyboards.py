@@ -5,7 +5,7 @@ data_to_write = ReplyKeyboardMarkup(
     keyboard=[
         [
             KeyboardButton(
-                text="Введите свои данные"
+                text="Эту кнопку не нажимать!"
             )
         ]
     ],
