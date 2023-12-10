@@ -1,0 +1,30 @@
+version: "3.2"
+services:
+  secret_santa_db:
+    image: postgres:15
+    container_name: secret_santa_db
+    ports:
+    - ${DB_PORT}:5432
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASS}
+      - POSTGRES_DB=${DB_NAME}
+    volumes:
+      - secret_santa_postgres_data:/var/lib/postgresql/data/
+
+  tg_bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: secret_santa
+    env_file:
+      - .env
+    depends_on:
+      - secret_santa_db
+    command: bash -c "./entrypoint.sh"
+    restart: on-failure
+
+volumes:
+  secret_santa_postgres_data:
