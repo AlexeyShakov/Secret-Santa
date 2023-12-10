@@ -16,3 +16,15 @@ class JoinGameState(StatesGroup):
 
 class StartGameState(StatesGroup):
     game_name = State()
+
+
+class DeleteProfileState(StatesGroup):
+    answer = State()
+
+
+class ChangeNameState(StatesGroup):
+    name = State()
+
+
+class ChangeLastNameState(StatesGroup):
+    last_name = State()
