@@ -1,13 +1,14 @@
 import os
+from pathlib import Path
 
-from aiogram import Bot, Dispatcher
-from aiogram.enums import ParseMode
 from dotenv import load_dotenv
 
-load_dotenv()
+
+BASE_DIR = Path(os.path.abspath(__file__)).parent.parent
+load_dotenv(os.path.join(BASE_DIR, ".env"))
+
 
 TOKEN = os.getenv("TG_BOT_TOKEN")
-
 
 DB_HOST = os.getenv("DB_HOST")
 DB_NAME = os.getenv("DB_NAME")

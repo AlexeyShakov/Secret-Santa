@@ -26,13 +26,13 @@ async def setup_bot_commands():
         BotCommand(command="/display_connected_players", description="Просмотреть присоединившихся игроков"),
         BotCommand(command="/delete_game", description="Удалить игру"),
         BotCommand(command="/change_players_number", description="Изменить количество участников"),
-        # TODO изменить игру - изменить количество участников
+        BotCommand(command="/leave_game", description="Покинуть игру"),
     ]
     await BOT.set_my_commands(bot_commands)
 
 
 async def main() -> None:
-    DP.include_routers(general_router, creator_game_router, join_game_router, user_profile_router)
+    DP.include_routers(general_router, creator_game_router, player_router, user_profile_router)
 
     await setup_bot_commands()
     await DP.start_polling(BOT)

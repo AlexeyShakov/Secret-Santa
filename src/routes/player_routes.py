@@ -12,24 +12,24 @@ from src.db.db_connection import async_session_maker
 from src.db.models import Game, Player
 from src.exceptions import PlayerAlreadyAddedToGameException
 from src.keyboards import data_to_write
-from src.states import JoinGameState
+from src.states import JoinGameState, LeaveGameState
 from src.utils import get_obj, add_player_to_game
 
-join_game_router = Router()
+player_router = Router()
 
-@join_game_router.message(Command("join_game"))
+
+@player_router.message(Command("join_game"))
 async def join_game(message: Message, state: FSMContext) -> None:
     await state.set_state(JoinGameState.game_name)
     await message.answer("Введите индетификатор игры", reply_markup=data_to_write)
 
 
-@join_game_router.message(JoinGameState.game_name)
+@player_router.message(JoinGameState.game_name)
 async def write_id_for_joining(message: Message, state: FSMContext) -> None:
     async with async_session_maker() as session:
         game_name = message.text
         game_query = select(Game).filter_by(name=game_name)
         game = await get_obj(game_query, session)
-
 
         if not game:
             await message.answer("Вы ввели не существующее название игры. Повторите попытку",
@@ -71,3 +71,33 @@ async def write_id_for_joining(message: Message, state: FSMContext) -> None:
             await message.answer("Вы уже состоите в данной игре!")
         finally:
             await state.clear()
+
+
+@player_router.message(Command("leave_game"))
+async def leave_game(message: Message, state: FSMContext):
+    async with async_session_maker() as session:
+        current_user_chat_id = message.chat.id
+        player_query = select(Player).filter_by(chat_id=current_user_chat_id)
+        player = await get_obj(player_query, session)
+        if not player:
+            await message.answer(
+                "Вы должны зарегистрироваться прежде чем выполнить это действие!")
+            return
+    await state.set_state(LeaveGameState.game_name)
+    await message.answer("Введите индетификатор игры", reply_markup=data_to_write)
+
+
+@player_router.message(LeaveGameState.game_name)
+async def enter_game_id_for_leaving(message: Message, state: FSMContext):
+    async with async_session_maker() as session:
+        game_query = select(Game).filter_by(name=message.text)
+        game: Game = await get_obj(game_query, session)
+        if not game:
+            await message.answer("Игра с таким идентификатором не существует!")
+            return
+        current_user_chat_id = message.chat.id
+        player_query = select(Player).filter_by(chat_id=current_user_chat_id)
+        player = await get_obj(player_query, session)
+        game.players.remove(player)
+        await session.commit()
+        await message.answer("Успешно завершено!")

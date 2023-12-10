@@ -41,3 +41,7 @@ class DisplayConnectedPlayersState(StatesGroup):
 class ChangePlayersNumberState(StatesGroup):
     game_name = State()
     new_players_number = State()
+
+
+class LeaveGameState(StatesGroup):
+    game_name = State()
