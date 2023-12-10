@@ -1,8 +1,10 @@
 from aiogram import Router
 from aiogram.filters import Command, CommandStart
+from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 from aiogram.utils.markdown import hbold
 
+from src.filters import CancelFilter
 
 general_router = Router()
 
@@ -23,6 +25,9 @@ async def help(message: Message) -> None:
            "все игроки присоединятся, создателю придет сообщение.\n\n" \
            "Для ознакомления со всеми функциями бота нажмите на кнопку меню.\n\n" \
            "Счастливого нового года!"
-    # TODO добавить информацию об изменении игры
-    # TODO добавить информацию об удалении игры
     await message.answer(info)
+
+
+@general_router.message(CancelFilter("Отменить"))
+async def cancel(message: Message, state: FSMContext):
+    await state.clear()

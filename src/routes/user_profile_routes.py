@@ -19,6 +19,7 @@ user_profile_router = Router()
 
 @user_profile_router.message(Command("register"))
 async def register(message: Message, state: FSMContext) -> None:
+    await state.clear()
     await state.set_state(RegistrationState.name)
     await message.answer(text="Введите свое имя", reply_markup=data_to_write)
 
@@ -50,6 +51,7 @@ async def write_last_name(message: Message, state: FSMContext) -> None:
 
 @user_profile_router.message(Command("delete_profile"))
 async def delete_profile(message: Message, state: FSMContext) -> None:
+    await state.clear()
     async with async_session_maker() as session:
         current_user_chat_id = message.chat.id
         player_query = select(Player).filter_by(chat_id=current_user_chat_id)
@@ -89,6 +91,7 @@ async def write_answer(message: Message, state: FSMContext) -> None:
 
 @user_profile_router.message(Command("change_name"))
 async def change_name(message: Message, state: FSMContext):
+    await state.clear()
     async with async_session_maker() as session:
         current_user_chat_id = message.chat.id
         player_query = select(Player).filter_by(chat_id=current_user_chat_id)
@@ -115,6 +118,7 @@ async def enter_new_name(message: Message, state: FSMContext) -> None:
 
 @user_profile_router.message(Command("change_last_name"))
 async def change_last_name(message: Message, state: FSMContext):
+    await state.clear()
     async with async_session_maker() as session:
         current_user_chat_id = message.chat.id
         player_query = select(Player).filter_by(chat_id=current_user_chat_id)

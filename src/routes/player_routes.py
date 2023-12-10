@@ -20,6 +20,7 @@ player_router = Router()
 
 @player_router.message(Command("join_game"))
 async def join_game(message: Message, state: FSMContext) -> None:
+    await state.clear()
     await state.set_state(JoinGameState.game_name)
     await message.answer("Введите индетификатор игры", reply_markup=data_to_write)
 
@@ -75,6 +76,7 @@ async def write_id_for_joining(message: Message, state: FSMContext) -> None:
 
 @player_router.message(Command("leave_game"))
 async def leave_game(message: Message, state: FSMContext):
+    await state.clear()
     async with async_session_maker() as session:
         current_user_chat_id = message.chat.id
         player_query = select(Player).filter_by(chat_id=current_user_chat_id)
@@ -94,6 +96,7 @@ async def enter_game_id_for_leaving(message: Message, state: FSMContext):
         game: Game = await get_obj(game_query, session)
         if not game:
             await message.answer("Игра с таким идентификатором не существует!")
+            await state.clear()
             return
         current_user_chat_id = message.chat.id
         player_query = select(Player).filter_by(chat_id=current_user_chat_id)
@@ -101,3 +104,4 @@ async def enter_game_id_for_leaving(message: Message, state: FSMContext):
         game.players.remove(player)
         await session.commit()
         await message.answer("Успешно завершено!")
+        await state.clear()

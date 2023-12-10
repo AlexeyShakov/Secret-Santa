@@ -22,6 +22,9 @@ creator_game_router = Router()
 
 @creator_game_router.message(Command("create_game"))
 async def create_game_handler(message: Message, state: FSMContext) -> None:
+    # Там может что-то оказаться, если юзер ввел эту команду, потом ввел другую и потом нажал на первоначальную команду
+    # Лучше очищать state перед каждым использованием
+    await state.clear()
     await state.set_state(CreationGameState.player_number)
     await message.answer("Введите количество участников", reply_markup=data_to_write)
 
@@ -47,6 +50,7 @@ async def write_number_of_player(message: Message, state: FSMContext) -> None:
 
 @creator_game_router.message(Command("start_game"))
 async def start_game_handler(message: Message, state: FSMContext):
+    await state.clear()
     await state.set_state(StartGameState.game_name)
     await message.answer("Введите индетификатор игры", reply_markup=data_to_write)
 
@@ -81,6 +85,7 @@ async def write_game_name_for_starting(message: Message, state: FSMContext) -> N
 
 @creator_game_router.message(Command("delete_game"))
 async def delete_game_handler(message: Message, state: FSMContext):
+    await state.clear()
     await state.set_state(DeleteGameState.game_name)
     await message.answer("Введите идентификтор игры")
 
@@ -105,6 +110,7 @@ async def enter_game_name_for_deleting(message: Message, state: FSMContext):
 
 @creator_game_router.message(Command("display_connected_players"))
 async def display_connected_players(message: Message, state: FSMContext):
+    await state.clear()
     await state.set_state(DisplayConnectedPlayersState.game_name)
     await message.answer("Введите идентификтор игры")
 
@@ -131,6 +137,7 @@ async def display_players(message: Message, state: FSMContext):
 
 @creator_game_router.message(Command("change_players_number"))
 async def change_players_number(message: Message, state: FSMContext):
+    await state.clear()
     await state.set_state(ChangePlayersNumberState.game_name)
     await message.answer("Введите идентификтор игры")
 

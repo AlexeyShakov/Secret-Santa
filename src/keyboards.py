@@ -1,13 +1,10 @@
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
+from aiogram.types import ReplyKeyboardRemove, ReplyKeyboardMarkup, KeyboardButton
 
 
 data_to_write = ReplyKeyboardMarkup(
     keyboard=[
-        [
-            KeyboardButton(
-                text="Эту кнопку не нажимать!"
-            )
-        ]
+        [KeyboardButton(text="Отменить")]
     ],
-    resize_keyboard=True
+    resize_keyboard=True,
+    one_time_keyboard=True
 )
