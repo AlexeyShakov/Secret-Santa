@@ -46,7 +46,7 @@ async def write_id_for_joining(message: Message, state: FSMContext) -> None:
         player = await get_obj(player_query, session)
         if not player:
             await message.answer(
-                "Прежде чем присоединяться к игре, Вы должны зарегистрироваться. Выберите регистрацию в /menu")
+                "Прежде чем присоединяться к игре, Вы должны зарегистрироваться. Выберите комманду регистрации в menu")
             return
         logging.info(f"Игрок {player.name} {player.last_name} пытается присоединиться к игре {hbold(game.name)}")
 

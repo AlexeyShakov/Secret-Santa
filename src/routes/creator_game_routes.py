@@ -11,7 +11,7 @@ from sqlalchemy import select
 from main import BOT
 from src.config import MIN_PLAYERS
 from src.db.db_connection import async_session_maker
-from src.db.models import Game
+from src.db.models import Game, Player
 from src.keyboards import data_to_write
 from src.states import CreationGameState, StartGameState, DeleteGameState, DisplayConnectedPlayersState, \
     ChangePlayersNumberState
@@ -22,6 +22,14 @@ creator_game_router = Router()
 
 @creator_game_router.message(Command("create_game"))
 async def create_game_handler(message: Message, state: FSMContext) -> None:
+    async with async_session_maker() as session:
+        current_user_chat_id = message.chat.id
+        player_query = select(Player).filter_by(chat_id=current_user_chat_id)
+        player = await get_obj(player_query, session)
+        if not player:
+            await message.answer(
+                "Прежде чем создать игру, Вы должны зарегистрироваться. Выберите комманду регистрации в меню")
+            return
     # Там может что-то оказаться, если юзер ввел эту команду, потом ввел другую и потом нажал на первоначальную команду
     # Лучше очищать state перед каждым использованием
     await state.clear()

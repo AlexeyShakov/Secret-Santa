@@ -27,6 +27,7 @@ async def setup_bot_commands():
         BotCommand(command="/delete_game", description="Удалить игру"),
         BotCommand(command="/change_players_number", description="Изменить количество участников"),
         BotCommand(command="/leave_game", description="Покинуть игру"),
+        BotCommand(command="/add_review", description="Оставить отзыв о боте"),
     ]
     await BOT.set_my_commands(bot_commands)
 
