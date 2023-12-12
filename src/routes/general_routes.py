@@ -43,8 +43,8 @@ async def cancel(message: Message, state: FSMContext):
 async def add_review(message: Message, state: FSMContext) -> None:
     await state.clear()
     await state.set_state(AddReviewState.review)
-    await message.answer("Напишите Ваш отзыв. В нем Вы можете написать, как о местах, которые Вам понравились/не понравились,\
-    или написать о вещах, которые можно улучшить", reply_markup=data_to_write)
+    await message.answer("Напишите Ваш отзыв. В нем Вы можете написать, как о вещах, которые Вам понравились/не понравились, "\
+    "или написать о вещах, которые можно улучшить", reply_markup=data_to_write)
 
 @general_router.message(AddReviewState.review)
 async def enter_review(message: Message, state: FSMContext) -> None:
@@ -57,6 +57,8 @@ async def enter_review(message: Message, state: FSMContext) -> None:
         current_user_chat_id = message.chat.id
         player_query = select(Player).filter_by(chat_id=current_user_chat_id)
         player = await get_obj(player_query, session)
-        review = Review(text=text, creator=player)
+        review = Review(text=text, review_creator=player)
         session.add(review)
+        await state.clear()
         await session.commit()
+        await message.answer("Отзыв успешно добавлен")

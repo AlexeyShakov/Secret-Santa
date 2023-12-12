@@ -46,7 +46,7 @@ class Player(Base):
     last_name: Mapped[str] = mapped_column(String(length=25), nullable=False)
 
     creator_games: Mapped[List[Game]] = relationship(back_populates="creator", cascade="all, delete")
-    creator_reviews: Mapped[List[Game]] = relationship(back_populates="review_creator", cascade="all, delete")
+    creator_reviews: Mapped[List["Review"]] = relationship(back_populates="review_creator", cascade="all, delete")
 
     games: Mapped[List[Game]] = relationship(secondary=association_table, back_populates="players")
 
