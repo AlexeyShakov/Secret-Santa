@@ -16,8 +16,7 @@ BOT = Bot(TOKEN, parse_mode=ParseMode.HTML)
 async def setup_bot_commands():
     bot_commands = [
         BotCommand(command="/help", description="Узнать информацию о боте"),
-        BotCommand(command="/register", description="Зарегистрироваться"),
-        BotCommand(command="/delete_profile", description="Удалить профиль"),
+        BotCommand(command="/manage_profile", description="Управление профилем"),
         BotCommand(command="/create_game", description="Создать игру"),
         BotCommand(command="/start_game", description="Запустить игру"),
         BotCommand(command="/join_game", description="Присоединиться к игре"),
