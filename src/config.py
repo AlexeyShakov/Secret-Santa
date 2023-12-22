@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 
 
 BASE_DIR = Path(os.path.abspath(__file__)).parent.parent
-load_dotenv(os.path.join(BASE_DIR, ".env_test"))
+load_dotenv(os.path.join(BASE_DIR, ".env"))
 
 
 TOKEN = os.getenv("TG_BOT_TOKEN")
