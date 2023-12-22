@@ -17,15 +17,14 @@ async def setup_bot_commands():
     bot_commands = [
         BotCommand(command="/help", description="Узнать информацию о боте"),
         BotCommand(command="/manage_profile", description="Управление профилем"),
+        BotCommand(command="/manage_game_as_player", description="Взаимодействие с игрой как пользователь"),
         BotCommand(command="/create_game", description="Создать игру"),
         BotCommand(command="/start_game", description="Запустить игру"),
-        BotCommand(command="/join_game", description="Присоединиться к игре"),
         BotCommand(command="/change_name", description="Поменять имя"),
         BotCommand(command="/change_last_name", description="Поменять фамилию"),
         BotCommand(command="/display_connected_players", description="Просмотреть присоединившихся игроков"),
         BotCommand(command="/delete_game", description="Удалить игру"),
         BotCommand(command="/change_players_number", description="Изменить количество участников"),
-        BotCommand(command="/leave_game", description="Покинуть игру"),
         BotCommand(command="/add_review", description="Оставить отзыв о боте"),
     ]
     await BOT.set_my_commands(bot_commands)
