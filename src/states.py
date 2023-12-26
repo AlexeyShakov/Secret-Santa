@@ -45,3 +45,7 @@ class ChangePlayersNumberState(StatesGroup):
 
 class LeaveGameState(StatesGroup):
     game_name = State()
+
+
+class AddReviewState(StatesGroup):
+    review = State()

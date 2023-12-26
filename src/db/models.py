@@ -1,7 +1,7 @@
 from typing import List
 
 from sqlalchemy.orm import relationship
-from sqlalchemy import Integer, Column, String, SmallInteger, CheckConstraint, Table, ForeignKey, Boolean
+from sqlalchemy import Integer, Column, String, SmallInteger, CheckConstraint, Table, ForeignKey, Boolean, Text
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.mutable import MutableDict
@@ -46,6 +46,7 @@ class Player(Base):
     last_name: Mapped[str] = mapped_column(String(length=25), nullable=False)
 
     creator_games: Mapped[List[Game]] = relationship(back_populates="creator", cascade="all, delete")
+    creator_reviews: Mapped[List["Review"]] = relationship(back_populates="review_creator", cascade="all, delete")
 
     games: Mapped[List[Game]] = relationship(secondary=association_table, back_populates="players")
 
@@ -58,3 +59,11 @@ class GameResult(Base):
     game_id: Mapped[int] = mapped_column(ForeignKey("games.id"))
     game: Mapped[Game] = relationship(back_populates="game_results", lazy="subquery")
 
+
+class Review(Base):
+    __tablename__ = "reviews"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    text: Mapped[str] = mapped_column(Text, nullable=False)
+
+    creator_id: Mapped[int] = mapped_column(ForeignKey("players.id"), nullable=True)
+    review_creator: Mapped["Player"] = relationship(back_populates="creator_reviews", lazy="subquery")

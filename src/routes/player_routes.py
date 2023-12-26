@@ -1,28 +1,36 @@
 import logging
 
-from aiogram import Router
+from aiogram import Router, F
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
-from aiogram.types import Message
+from aiogram.types import Message, CallbackQuery
 from aiogram.utils.markdown import hbold
 from sqlalchemy import select
 
 from main import BOT
+from src.callback_data import JoinGameCallBackData, LeaveGameCallBackData
 from src.db.db_connection import async_session_maker
 from src.db.models import Game, Player
 from src.exceptions import PlayerAlreadyAddedToGameException
 from src.keyboards import data_to_write
+from src.keyboards.player import player_keyboard
 from src.states import JoinGameState, LeaveGameState
 from src.utils import get_obj, add_player_to_game
+
 
 player_router = Router()
 
 
-@player_router.message(Command("join_game"))
-async def join_game(message: Message, state: FSMContext) -> None:
+@player_router.message(Command("manage_game_as_player"))
+async def manage_game_as_player(message: Message) -> None:
+    await message.answer(text="Выберите действие", reply_markup=player_keyboard)
+
+
+@player_router.callback_query(JoinGameCallBackData.filter(F.button_name == "join_game"))
+async def join_game(call: CallbackQuery, callback_data: JoinGameCallBackData, state: FSMContext) -> None:
     await state.clear()
     await state.set_state(JoinGameState.game_name)
-    await message.answer("Введите индетификатор игры", reply_markup=data_to_write)
+    await call.message.answer("Введите индетификатор игры", reply_markup=data_to_write)
 
 
 @player_router.message(JoinGameState.game_name)
@@ -33,7 +41,7 @@ async def write_id_for_joining(message: Message, state: FSMContext) -> None:
         game = await get_obj(game_query, session)
 
         if not game:
-            await message.answer("Вы ввели не существующее название игры. Повторите попытку",
+            await message.answer("Вы ввели не существующий идентификатор игры. Повторите попытку",
                                  reply_markup=data_to_write)
             await state.clear()
             return
@@ -46,7 +54,7 @@ async def write_id_for_joining(message: Message, state: FSMContext) -> None:
         player = await get_obj(player_query, session)
         if not player:
             await message.answer(
-                "Прежде чем присоединяться к игре, Вы должны зарегистрироваться. Выберите регистрацию в /menu")
+                "Прежде чем присоединяться к игре, Вы должны зарегистрироваться. Выберите комманду регистрации в menu")
             return
         logging.info(f"Игрок {player.name} {player.last_name} пытается присоединиться к игре {hbold(game.name)}")
 
@@ -74,19 +82,19 @@ async def write_id_for_joining(message: Message, state: FSMContext) -> None:
             await state.clear()
 
 
-@player_router.message(Command("leave_game"))
-async def leave_game(message: Message, state: FSMContext):
+@player_router.callback_query(LeaveGameCallBackData.filter(F.button_name == "leave_game"))
+async def leave_game(call: CallbackQuery, callback_data: LeaveGameCallBackData, state: FSMContext):
     await state.clear()
     async with async_session_maker() as session:
-        current_user_chat_id = message.chat.id
+        current_user_chat_id = call.message.chat.id
         player_query = select(Player).filter_by(chat_id=current_user_chat_id)
         player = await get_obj(player_query, session)
         if not player:
-            await message.answer(
+            await call.message.answer(
                 "Вы должны зарегистрироваться прежде чем выполнить это действие!")
             return
     await state.set_state(LeaveGameState.game_name)
-    await message.answer("Введите индетификатор игры", reply_markup=data_to_write)
+    await call.message.answer("Введите индетификатор игры", reply_markup=data_to_write)
 
 
 @player_router.message(LeaveGameState.game_name)
@@ -95,7 +103,8 @@ async def enter_game_id_for_leaving(message: Message, state: FSMContext):
         game_query = select(Game).filter_by(name=message.text)
         game: Game = await get_obj(game_query, session)
         if not game:
-            await message.answer("Игра с таким идентификатором не существует!")
+            await message.answer("Вы ввели не существующий идентификатор игры. Повторите попытку",
+                                 reply_markup=data_to_write)
             await state.clear()
             return
         current_user_chat_id = message.chat.id
