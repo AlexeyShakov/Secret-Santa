@@ -35,6 +35,7 @@ async def join_game(call: CallbackQuery, callback_data: JoinGameCallBackData, st
 
 @player_router.message(JoinGameState.game_name)
 async def write_id_for_joining(message: Message, state: FSMContext) -> None:
+    # TODO функция получилось большой, в ней много разной логики. Стоит подумать над тем, чтобы ее разбить
     async with async_session_maker() as session:
         game_name = message.text
         game_query = select(Game).filter_by(name=game_name)
