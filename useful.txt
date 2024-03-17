@@ -1,3 +1,0 @@
-alembic revision --autogenerate # генерирует миграцию
-alembic upgrade head # применяет миграцию
-alembic downgrade base # удаляет все миграции
